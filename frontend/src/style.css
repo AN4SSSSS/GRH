@@ -1,0 +1,242 @@
+:root {
+  --color-primary: #2f6f5e;
+  --color-primary-dark: #24594b;
+  --color-bg: #f6f7f9;
+  --color-card: #ffffff;
+  --color-border: #e0e2e6;
+  --color-text: #2b2d33;
+  --color-text-light: #6b7280;
+  --color-danger: #c0392b;
+  --radius: 10px;
+}
+
+:root[data-theme='dark'] {
+  --color-primary: #3f9e86;
+  --color-primary-dark: #2f6f5e;
+  --color-bg: #14161a;
+  --color-card: #1e2126;
+  --color-border: #333840;
+  --color-text: #e5e7eb;
+  --color-text-light: #9199a6;
+  --color-danger: #f87171;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  transition: background 0.15s, color 0.15s;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+}
+
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 10px 18px;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--color-primary);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn:hover {
+  background: var(--color-primary-dark);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.form-group {
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-card);
+  color: var(--color-text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 90px;
+  line-height: 1.5;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-text);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.theme-toggle:hover {
+  border-color: var(--color-primary);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+}
+
+th {
+  color: var(--color-text-light);
+  font-weight: 600;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-en_attente {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-approuvee {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge-refusee {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-annulee {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+:root[data-theme='dark'] .badge-en_attente {
+  background: #4d3b0f;
+  color: #fde68a;
+}
+
+:root[data-theme='dark'] .badge-approuvee {
+  background: #113a2c;
+  color: #6ee7b7;
+}
+
+:root[data-theme='dark'] .badge-refusee {
+  background: #451a1a;
+  color: #fca5a5;
+}
+
+:root[data-theme='dark'] .badge-annulee {
+  background: #33383f;
+  color: #d1d5db;
+}
+
+.error-message {
+  color: var(--color-danger);
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.absence-paye {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #2563eb;
+}
+
+.absence-maladie {
+  background: #ffedd5;
+  color: #9a3412;
+  border: 1px solid #ea580c;
+}
+
+.absence-sans_solde {
+  background: #f3e4f0;
+  color: #7c3f74;
+  border: 1px solid #93528f;
+}
+
+:root[data-theme='dark'] .absence-paye {
+  background: #1e3a5f;
+  color: #93c5fd;
+  border-color: #60a5fa;
+}
+
+:root[data-theme='dark'] .absence-maladie {
+  background: #4a2a0f;
+  color: #fdba74;
+  border-color: #fb923c;
+}
+
+:root[data-theme='dark'] .absence-sans_solde {
+  background: #453040;
+  color: #e0b3da;
+  border-color: #c08ebd;
+}
