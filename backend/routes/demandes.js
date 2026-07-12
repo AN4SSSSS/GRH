@@ -4,6 +4,7 @@ const User = require('../models/User')
 const Parametrage = require('../models/Parametrage')
 const verifyToken = require('../middleware/auth')
 const requireRole = require('../middleware/role')
+const { notifier, notifierPlusieurs } = require('../services/notificationService')
 
 const router = express.Router()
 
@@ -26,9 +27,36 @@ function periodesSeChevauchent(debut1, fin1, debut2, fin2) {
   return debut1 <= fin2 && debut2 <= fin1
 }
 
+function calculerNbJoursOuvres(dateDebut, dateFin) {
+  let count = 0
+  const current = new Date(dateDebut)
+  current.setHours(0, 0, 0, 0)
+  const fin = new Date(dateFin)
+  fin.setHours(0, 0, 0, 0)
+  while (current <= fin) {
+    const jour = current.getDay()
+    if (jour !== 0 && jour !== 6) {
+      count++
+    }
+    current.setDate(current.getDate() + 1)
+  }
+  return count
+}
+
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const { type, dateDebut, dateFin, nbJours, motif } = req.body
+    const { type, dateDebut, dateFin, motif } = req.body
+
+    const debut = new Date(dateDebut)
+    const fin = new Date(dateFin)
+    if (Number.isNaN(debut.getTime()) || Number.isNaN(fin.getTime()) || fin < debut) {
+      return res.status(400).json({ message: 'Période invalide' })
+    }
+
+    const nbJours = calculerNbJoursOuvres(debut, fin)
+    if (nbJours <= 0) {
+      return res.status(400).json({ message: 'La période sélectionnée ne contient aucun jour ouvré' })
+    }
 
     const parametrage = await getOuCreerParametrage()
     const typeConge = parametrage.typesConges.find((t) => t.cle === type)
@@ -57,6 +85,26 @@ router.post('/', verifyToken, async (req, res) => {
       nbJours,
       motif,
     })
+
+    const auteur = await User.findById(req.userId).select('nom managerId')
+    const io = req.app.get('io')
+    const message = `${auteur.nom} a créé une nouvelle demande de congé`
+
+    if (auteur.managerId) {
+      await notifier(io, {
+        destinataire: auteur.managerId,
+        type: 'demande_creee',
+        message,
+        demandeId: demande._id,
+      })
+    } else {
+      const rh = await User.find({ role: 'rh' }).select('_id')
+      await notifierPlusieurs(io, rh.map((u) => u._id), {
+        type: 'demande_creee',
+        message,
+        demandeId: demande._id,
+      })
+    }
 
     res.status(201).json(demande)
   } catch (error) {
@@ -157,6 +205,13 @@ router.patch('/:id/valider', verifyToken, requireRole('manager'), async (req, re
     demande.valideParId = req.userId
     await demande.save()
 
+    await notifier(req.app.get('io'), {
+      destinataire: demande.userId._id,
+      type: 'demande_validee',
+      message: 'Votre demande de congé a été approuvée',
+      demandeId: demande._id,
+    })
+
     res.json(demande)
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la validation de la demande' })
@@ -182,6 +237,13 @@ router.patch('/:id/refuser', verifyToken, requireRole('manager'), async (req, re
     demande.commentaire = commentaire
     demande.valideParId = req.userId
     await demande.save()
+
+    await notifier(req.app.get('io'), {
+      destinataire: demande.userId._id,
+      type: 'demande_refusee',
+      message: `Votre demande de congé a été refusée : ${commentaire}`,
+      demandeId: demande._id,
+    })
 
     res.json(demande)
   } catch (error) {

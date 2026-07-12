@@ -4,6 +4,7 @@ const store = reactive({
   token: localStorage.getItem('token') || null,
   user: JSON.parse(localStorage.getItem('user') || 'null'),
   demandes: [],
+  notifications: [],
 })
 
 function setSession(token, user) {
@@ -17,6 +18,7 @@ function clearSession() {
   store.token = null
   store.user = null
   store.demandes = []
+  store.notifications = []
   localStorage.removeItem('token')
   localStorage.removeItem('user')
 }

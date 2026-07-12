@@ -110,9 +110,17 @@ router.put('/:id', verifyToken, async (req, res) => {
       return res.status(403).json({ message: 'Accès refusé' })
     }
 
-    const champsAutorises = ['rh', 'admin'].includes(req.userRole)
-      ? ['nom', 'username', 'telephone', 'cin', 'dateEmbauche', 'departement', 'managerId', 'role']
-      : ['telephone']
+    let champsAutorises
+    if (req.userRole === 'admin') {
+      champsAutorises = [
+        'nom', 'username', 'email', 'password', 'role',
+        'telephone', 'cin', 'dateEmbauche', 'departement', 'managerId', 'actif',
+      ]
+    } else if (req.userRole === 'rh') {
+      champsAutorises = ['nom', 'username', 'telephone', 'cin', 'dateEmbauche', 'departement', 'managerId', 'role']
+    } else {
+      champsAutorises = ['telephone']
+    }
 
     const updates = {}
     for (const champ of champsAutorises) {
@@ -123,6 +131,25 @@ router.put('/:id', verifyToken, async (req, res) => {
 
     if (req.userRole === 'rh' && updates.role === 'admin') {
       return res.status(403).json({ message: 'Le RH ne peut pas attribuer le rôle admin' })
+    }
+
+    if (updates.username || updates.email) {
+      const conflit = await User.findOne({
+        _id: { $ne: req.params.id },
+        $or: [
+          ...(updates.username ? [{ username: updates.username }] : []),
+          ...(updates.email ? [{ email: updates.email }] : []),
+        ],
+      })
+      if (conflit) {
+        return res.status(400).json({ message: "Ce nom d'utilisateur ou cet email est déjà utilisé" })
+      }
+    }
+
+    if (updates.password) {
+      updates.password = await bcrypt.hash(updates.password, 10)
+    } else {
+      delete updates.password
     }
 
     const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true }).select('-password')

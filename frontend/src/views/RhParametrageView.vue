@@ -111,6 +111,8 @@ onMounted(charger)
   padding: 8px 10px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
+  background: var(--color-card);
+  color: var(--color-text);
 }
 
 .btn-small {

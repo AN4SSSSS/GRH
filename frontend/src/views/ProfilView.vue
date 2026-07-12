@@ -11,18 +11,26 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const fichier = ref(null)
 const uploadLoading = ref(false)
+const nouveauMotDePasse = ref('')
+const autresUtilisateurs = ref([])
 
 const baseUrl = api.defaults.baseURL.replace('/api', '')
 
 const estRh = computed(() => store.user?.role === 'rh' || store.user?.role === 'admin')
+const estAdmin = computed(() => store.user?.role === 'admin')
 const estSoi = computed(() => utilisateur.value && store.user?.id === utilisateur.value._id)
 
 async function chargerProfil() {
   loading.value = true
   errorMessage.value = ''
+  nouveauMotDePasse.value = ''
   try {
     const response = await api.get('/users/' + route.params.id)
     utilisateur.value = response.data
+    if (store.user?.role === 'admin') {
+      const reponseUsers = await api.get('/users')
+      autresUtilisateurs.value = reponseUsers.data.filter((u) => u._id !== utilisateur.value._id)
+    }
   } catch (error) {
     errorMessage.value = error.response?.data?.message || 'Erreur lors du chargement de la fiche'
   } finally {
@@ -34,15 +42,26 @@ async function enregistrer() {
   successMessage.value = ''
   errorMessage.value = ''
   try {
-    const response = await api.put('/users/' + utilisateur.value._id, {
+    const payload = {
       nom: utilisateur.value.nom,
       username: utilisateur.value.username,
       telephone: utilisateur.value.telephone,
       cin: utilisateur.value.cin,
       dateEmbauche: utilisateur.value.dateEmbauche,
       departement: utilisateur.value.departement,
-    })
+    }
+    if (estAdmin.value) {
+      payload.email = utilisateur.value.email
+      payload.role = utilisateur.value.role
+      payload.actif = utilisateur.value.actif
+      payload.managerId = utilisateur.value.managerId || null
+      if (nouveauMotDePasse.value) {
+        payload.password = nouveauMotDePasse.value
+      }
+    }
+    const response = await api.put('/users/' + utilisateur.value._id, payload)
     utilisateur.value = response.data
+    nouveauMotDePasse.value = ''
     successMessage.value = 'Fiche mise à jour'
   } catch (error) {
     errorMessage.value = error.response?.data?.message || 'Erreur lors de la mise à jour'
@@ -99,7 +118,7 @@ onMounted(chargerProfil)
         <div class="form-row">
           <div class="form-group">
             <label>Email</label>
-            <input :value="utilisateur.email" type="email" disabled />
+            <input v-model="utilisateur.email" type="email" :disabled="!estAdmin" />
           </div>
           <div class="form-group">
             <label>Téléphone</label>
@@ -125,8 +144,35 @@ onMounted(chargerProfil)
           </div>
           <div class="form-group">
             <label>Rôle</label>
-            <input :value="utilisateur.role" type="text" disabled />
+            <select v-if="estAdmin" v-model="utilisateur.role">
+              <option value="employe">Employé</option>
+              <option value="manager">Manager</option>
+              <option value="rh">RH</option>
+              <option value="admin">Admin</option>
+            </select>
+            <input v-else :value="utilisateur.role" type="text" disabled />
           </div>
+        </div>
+
+        <div v-if="estAdmin" class="form-row">
+          <div class="form-group">
+            <label>Manager</label>
+            <select v-model="utilisateur.managerId">
+              <option :value="null">Aucun</option>
+              <option v-for="u in autresUtilisateurs" :key="u._id" :value="u._id">{{ u.nom }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Nouveau mot de passe</label>
+            <input v-model="nouveauMotDePasse" type="password" placeholder="Laisser vide pour ne pas changer" />
+          </div>
+        </div>
+
+        <div v-if="estAdmin" class="form-group form-group-inline">
+          <label>
+            <input v-model="utilisateur.actif" type="checkbox" />
+            Compte actif
+          </label>
         </div>
 
         <button class="btn" @click="enregistrer">Enregistrer</button>
@@ -183,6 +229,18 @@ onMounted(chargerProfil)
 
 .form-row .form-group {
   flex: 1;
+}
+
+.form-group-inline {
+  margin-bottom: 16px;
+}
+
+.form-group-inline label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .empty-message {

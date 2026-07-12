@@ -8,14 +8,19 @@ const typesConges = ref([])
 
 const soldes = computed(() =>
   typesConges.value.map((type) => {
-    const joursPris = store.demandes
-      .filter((d) => d.type === type.cle && d.statut === 'approuvee')
+    const demandesDuType = store.demandes.filter((d) => d.type === type.cle)
+    const joursApprouves = demandesDuType
+      .filter((d) => d.statut === 'approuvee')
+      .reduce((total, d) => total + d.nbJours, 0)
+    const joursEnAttente = demandesDuType
+      .filter((d) => d.statut === 'en_attente')
       .reduce((total, d) => total + d.nbJours, 0)
     return {
       ...type,
-      pris: joursPris,
+      pris: joursApprouves,
+      enAttente: joursEnAttente,
       illimite: !type.soldeAnnuel,
-      restant: type.soldeAnnuel - joursPris,
+      restant: type.soldeAnnuel - joursApprouves - joursEnAttente,
     }
   })
 )
@@ -45,6 +50,7 @@ onMounted(chargerDemandes)
         <p class="solde-valeur" v-else><span>Illimité</span></p>
         <p class="solde-detail" v-if="!type.illimite">{{ type.pris }} jours pris sur {{ type.soldeAnnuel }}</p>
         <p class="solde-detail" v-else>{{ type.pris }} jours pris</p>
+        <p class="solde-detail" v-if="type.enAttente">{{ type.enAttente }} jour(s) en attente de validation</p>
       </div>
     </div>
 

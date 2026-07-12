@@ -1,11 +1,19 @@
 <script setup>
+import { onMounted } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { store, clearSession } from '../store.js'
 import { theme, toggleTheme } from '../theme.js'
+import { connecterSocket, deconnecterSocket } from '../socket.js'
+import NotificationBell from '../components/NotificationBell.vue'
 
 const router = useRouter()
 
+onMounted(() => {
+  connecterSocket()
+})
+
 function logout() {
+  deconnecterSocket()
   clearSession()
   router.push({ name: 'login' })
 }
@@ -17,6 +25,7 @@ function logout() {
       <div class="sidebar-header">
         <h2>GRH</h2>
         <p v-if="store.user">{{ store.user.nom }}</p>
+        <NotificationBell />
       </div>
       <nav class="sidebar-nav">
         <template v-if="store.user?.role === 'employe'">
@@ -68,7 +77,12 @@ function logout() {
 }
 
 .sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 240px;
+  height: 100vh;
+  overflow-y: auto;
   background: var(--color-card);
   border-right: 1px solid var(--color-border);
   display: flex;
@@ -84,7 +98,11 @@ function logout() {
 .sidebar-header p {
   color: var(--color-text-light);
   font-size: 14px;
-  margin: 0 0 24px;
+  margin: 0 0 12px;
+}
+
+.sidebar-header .notification-bell {
+  margin-bottom: 12px;
 }
 
 .sidebar-nav {
@@ -123,6 +141,7 @@ function logout() {
 
 .content {
   flex: 1;
+  margin-left: 240px;
   padding: 32px;
 }
 </style>
