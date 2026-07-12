@@ -7,7 +7,7 @@ const router = express.Router()
 
 router.post('/register', async (req, res) => {
   try {
-    const { nom, username, email, password, role } = req.body
+    const { nom, username, email, password } = req.body
 
     const userExistant = await User.findOne({ $or: [{ username }, { email }] })
     if (userExistant) {
@@ -21,7 +21,7 @@ router.post('/register', async (req, res) => {
       username,
       email,
       password: passwordHache,
-      role: role || 'employe',
+      role: 'employe',
     })
 
     res.status(201).json({
@@ -45,6 +45,10 @@ router.post('/login', async (req, res) => {
     const motDePasseValide = await bcrypt.compare(password, user.password)
     if (!motDePasseValide) {
       return res.status(401).json({ message: 'Nom d\'utilisateur ou mot de passe incorrect' })
+    }
+
+    if (!user.actif) {
+      return res.status(403).json({ message: 'Ce compte a été désactivé' })
     }
 
     const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, {

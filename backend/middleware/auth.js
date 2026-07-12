@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken')
+const User = require('../models/User')
 
-function verifyToken(req, res, next) {
+async function verifyToken(req, res, next) {
   const authHeader = req.headers.authorization
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -11,6 +12,12 @@ function verifyToken(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
+
+    const user = await User.findById(decoded.userId).select('actif')
+    if (!user || !user.actif) {
+      return res.status(403).json({ message: 'Ce compte a été désactivé' })
+    }
+
     req.userId = decoded.userId
     req.userRole = decoded.role
     next()
