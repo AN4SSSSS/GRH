@@ -4,7 +4,16 @@ import api from '../api.js'
 import { typesConges } from '../typesConges.js'
 
 const demandes = ref([])
+const joursFeries = ref([])
 const dateAffichee = ref(new Date())
+
+const feriesParDate = computed(() => {
+  const map = new Map()
+  joursFeries.value.forEach((j) => {
+    map.set(new Date(j.date).toDateString(), j.label)
+  })
+  return map
+})
 
 const joursSemaine = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 
@@ -34,7 +43,8 @@ const cases = computed(() => {
       const fin = new Date(new Date(d.dateFin).toDateString())
       return date >= debut && date <= fin
     })
-    liste.push({ jour, absences })
+    const ferie = feriesParDate.value.get(date.toDateString()) || null
+    liste.push({ jour, absences, ferie })
   }
   return liste
 })
@@ -48,8 +58,12 @@ function moisSuivant() {
 }
 
 async function chargerCalendrier() {
-  const response = await api.get('/demandes/calendrier')
-  demandes.value = response.data
+  const [reponseDemandes, reponseParametrage] = await Promise.all([
+    api.get('/demandes/calendrier'),
+    api.get('/parametrage'),
+  ])
+  demandes.value = reponseDemandes.data
+  joursFeries.value = reponseParametrage.data.joursFeries
 }
 
 onMounted(chargerCalendrier)
@@ -71,13 +85,23 @@ onMounted(chargerCalendrier)
           <span class="legende-puce" :class="'absence-' + type.cle"></span>
           {{ type.label }}
         </div>
+        <div class="legende-item">
+          <span class="legende-puce ferie-puce"></span>
+          Jour férié
+        </div>
       </div>
 
       <div class="grille">
         <div v-for="jour in joursSemaine" :key="jour" class="entete-jour">{{ jour }}</div>
-        <div v-for="(caseJour, index) in cases" :key="index" class="case-jour" :class="{ vide: !caseJour }">
+        <div
+          v-for="(caseJour, index) in cases"
+          :key="index"
+          class="case-jour"
+          :class="{ vide: !caseJour, ferie: caseJour?.ferie }"
+        >
           <template v-if="caseJour">
             <p class="numero-jour">{{ caseJour.jour }}</p>
+            <p v-if="caseJour.ferie" class="ferie-label" :title="caseJour.ferie">{{ caseJour.ferie }}</p>
             <div
               class="absence"
               :class="'absence-' + absence.type"
