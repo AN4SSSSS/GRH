@@ -36,7 +36,7 @@ function toggle() {
 
 function routeCiblee(notification) {
   if (notification.type === 'demande_creee') {
-    return store.user?.role === 'manager' ? 'validations' : 'rh-dashboard'
+    return store.user?.role === 'manager' ? 'validations' : 'rh-admin-dashboard'
   }
   return 'mes-demandes'
 }

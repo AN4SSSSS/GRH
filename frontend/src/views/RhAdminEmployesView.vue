@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import api from '../api.js'
 import { store } from '../store.js'
@@ -14,6 +14,21 @@ const username = ref('')
 const email = ref('')
 const password = ref('')
 const role = ref('employe')
+const departement = ref('')
+const managerId = ref('')
+
+const managers = computed(() => utilisateurs.value.filter((u) => u.role === 'manager'))
+
+const equipes = computed(() =>
+  managers.value.map((manager) => ({
+    manager,
+    membres: utilisateurs.value.filter((u) => u.managerId === manager._id),
+  }))
+)
+
+const sansEquipe = computed(() =>
+  utilisateurs.value.filter((u) => u.role !== 'manager' && !u.managerId)
+)
 
 async function charger() {
   loading.value = true
@@ -22,7 +37,7 @@ async function charger() {
   loading.value = false
 }
 
-async function ajouterCompte() {
+async function ajouterEmploye() {
   errorMessage.value = ''
   try {
     await api.post('/users', {
@@ -31,12 +46,16 @@ async function ajouterCompte() {
       email: email.value,
       password: password.value,
       role: role.value,
+      departement: departement.value,
+      managerId: managerId.value || null,
     })
     nom.value = ''
     username.value = ''
     email.value = ''
     password.value = ''
     role.value = 'employe'
+    departement.value = ''
+    managerId.value = ''
     afficherFormulaire.value = false
     await charger()
   } catch (error) {
@@ -75,17 +94,17 @@ onMounted(charger)
 
 <template>
   <div>
-    <h1 class="page-title">Comptes</h1>
+    <h1 class="page-title">Employés</h1>
 
     <div class="card">
       <div class="card-header">
-        <h2>Tous les comptes</h2>
+        <h2>Liste des employés</h2>
         <button class="btn" @click="afficherFormulaire = !afficherFormulaire">
-          {{ afficherFormulaire ? 'Annuler' : 'Ajouter un compte' }}
+          {{ afficherFormulaire ? 'Annuler' : 'Ajouter un employé' }}
         </button>
       </div>
 
-      <form v-if="afficherFormulaire" class="form-ajout" @submit.prevent="ajouterCompte">
+      <form v-if="afficherFormulaire" class="form-ajout" @submit.prevent="ajouterEmploye">
         <div class="form-row">
           <div class="form-group">
             <label>Nom</label>
@@ -106,66 +125,161 @@ onMounted(charger)
             <input v-model="password" type="password" required />
           </div>
         </div>
-        <div class="form-group role-select">
-          <label>Rôle</label>
-          <select v-model="role">
-            <option value="employe">Employé</option>
-            <option value="manager">Manager</option>
-            <option value="rh">RH</option>
-            <option value="admin">Admin</option>
-          </select>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Rôle</label>
+            <select v-model="role">
+              <option value="employe">Employé</option>
+              <option value="manager">Manager</option>
+              <option value="rh-admin">RH-Admin</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Département</label>
+            <input v-model="departement" type="text" />
+          </div>
+          <div class="form-group">
+            <label>Manager</label>
+            <select v-model="managerId">
+              <option value="">Aucun</option>
+              <option v-for="manager in managers" :key="manager._id" :value="manager._id">
+                {{ manager.nom }}
+              </option>
+            </select>
+          </div>
         </div>
         <button class="btn" type="submit">Créer le compte</button>
         <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
       </form>
 
       <p v-if="loading">Chargement...</p>
-      <table v-else-if="utilisateurs.length">
-        <thead>
-          <tr>
-            <th>Nom</th>
-            <th>Nom d'utilisateur</th>
-            <th>Email</th>
-            <th>Rôle</th>
-            <th>Statut</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="u in utilisateurs" :key="u._id">
-            <td>{{ u.nom }}</td>
-            <td>{{ u.username }}</td>
-            <td>{{ u.email }}</td>
-            <td>
-              <select class="role-select-table" :value="u.role" @change="changerRole(u, $event.target.value)">
-                <option value="employe">Employé</option>
-                <option value="manager">Manager</option>
-                <option value="rh">RH</option>
-                <option value="admin">Admin</option>
-              </select>
-            </td>
-            <td>
-              <span class="badge" :class="u.actif ? 'badge-approuvee' : 'badge-refusee'">
-                {{ u.actif ? 'Actif' : 'Désactivé' }}
-              </span>
-            </td>
-            <td class="actions">
-              <RouterLink class="btn-small" :to="'/profil/' + u._id">Fiche</RouterLink>
-              <button class="btn btn-secondary btn-small" @click="toggleActif(u._id)">
-                {{ u.actif ? 'Désactiver' : 'Activer' }}
-              </button>
-              <button
-                class="btn btn-secondary btn-small btn-danger"
-                :disabled="u._id === store.user?.id"
-                @click="supprimer(u)"
-              >
-                Supprimer
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <p v-else>Aucun compte.</p>
+
+      <template v-else-if="utilisateurs.length">
+        <div v-for="groupe in equipes" :key="groupe.manager._id" class="groupe">
+          <div class="groupe-header">
+            <h3>{{ groupe.manager.nom }}</h3>
+            <select
+              class="role-select-table"
+              :value="groupe.manager.role"
+              @change="changerRole(groupe.manager, $event.target.value)"
+            >
+              <option value="employe">Employé</option>
+              <option value="manager">Manager</option>
+              <option value="rh-admin">RH-Admin</option>
+            </select>
+            <RouterLink class="btn-small" :to="'/profil/' + groupe.manager._id">Fiche</RouterLink>
+            <button
+              class="btn btn-secondary btn-small btn-danger"
+              :disabled="groupe.manager._id === store.user?.id"
+              @click="supprimer(groupe.manager)"
+            >
+              Supprimer
+            </button>
+          </div>
+
+          <table v-if="groupe.membres.length">
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Nom d'utilisateur</th>
+                <th>Email</th>
+                <th>Rôle</th>
+                <th>Département</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="u in groupe.membres" :key="u._id">
+                <td>{{ u.nom }}</td>
+                <td>{{ u.username }}</td>
+                <td>{{ u.email }}</td>
+                <td>
+                  <select class="role-select-table" :value="u.role" @change="changerRole(u, $event.target.value)">
+                    <option value="employe">Employé</option>
+                    <option value="manager">Manager</option>
+                    <option value="rh-admin">RH-Admin</option>
+                  </select>
+                </td>
+                <td>{{ u.departement }}</td>
+                <td>
+                  <span class="badge" :class="u.actif ? 'badge-approuvee' : 'badge-refusee'">
+                    {{ u.actif ? 'Actif' : 'Désactivé' }}
+                  </span>
+                </td>
+                <td class="actions">
+                  <RouterLink class="btn-small" :to="'/profil/' + u._id">Fiche</RouterLink>
+                  <button class="btn btn-secondary btn-small" @click="toggleActif(u._id)">
+                    {{ u.actif ? 'Désactiver' : 'Activer' }}
+                  </button>
+                  <button
+                    class="btn btn-secondary btn-small btn-danger"
+                    :disabled="u._id === store.user?.id"
+                    @click="supprimer(u)"
+                  >
+                    Supprimer
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p v-else class="empty-message">Aucun équipier.</p>
+        </div>
+
+        <div class="groupe">
+          <div class="groupe-header">
+            <h3>Sans manager assigné</h3>
+          </div>
+          <table v-if="sansEquipe.length">
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Nom d'utilisateur</th>
+                <th>Email</th>
+                <th>Rôle</th>
+                <th>Département</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="u in sansEquipe" :key="u._id">
+                <td>{{ u.nom }}</td>
+                <td>{{ u.username }}</td>
+                <td>{{ u.email }}</td>
+                <td>
+                  <select class="role-select-table" :value="u.role" @change="changerRole(u, $event.target.value)">
+                    <option value="employe">Employé</option>
+                    <option value="manager">Manager</option>
+                    <option value="rh-admin">RH-Admin</option>
+                  </select>
+                </td>
+                <td>{{ u.departement }}</td>
+                <td>
+                  <span class="badge" :class="u.actif ? 'badge-approuvee' : 'badge-refusee'">
+                    {{ u.actif ? 'Actif' : 'Désactivé' }}
+                  </span>
+                </td>
+                <td class="actions">
+                  <RouterLink class="btn-small" :to="'/profil/' + u._id">Fiche</RouterLink>
+                  <button class="btn btn-secondary btn-small" @click="toggleActif(u._id)">
+                    {{ u.actif ? 'Désactiver' : 'Activer' }}
+                  </button>
+                  <button
+                    class="btn btn-secondary btn-small btn-danger"
+                    :disabled="u._id === store.user?.id"
+                    @click="supprimer(u)"
+                  >
+                    Supprimer
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p v-else class="empty-message">Aucun compte sans manager.</p>
+        </div>
+      </template>
+      <p v-else>Aucun employé.</p>
 
       <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
     </div>
@@ -204,8 +318,36 @@ onMounted(charger)
   flex: 1;
 }
 
-.role-select {
-  max-width: 220px;
+.groupe {
+  margin-bottom: 28px;
+}
+
+.groupe:last-child {
+  margin-bottom: 0;
+}
+
+.groupe-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.groupe-header h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.badge-manager {
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  color: var(--color-primary);
+}
+
+.empty-message {
+  color: var(--color-text-light);
+  font-size: 13px;
 }
 
 .role-select-table {

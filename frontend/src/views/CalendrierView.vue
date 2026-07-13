@@ -10,7 +10,12 @@ const dateAffichee = ref(new Date())
 const feriesParDate = computed(() => {
   const map = new Map()
   joursFeries.value.forEach((j) => {
-    map.set(new Date(j.date).toDateString(), j.label)
+    const nbJours = j.nbJours || 1
+    for (let i = 0; i < nbJours; i++) {
+      const date = new Date(j.date)
+      date.setDate(date.getDate() + i)
+      map.set(date.toDateString(), j.label)
+    }
   })
   return map
 })

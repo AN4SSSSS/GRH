@@ -12,6 +12,7 @@ const parametrageSchema = new mongoose.Schema({
     {
       date: { type: Date, required: true },
       label: { type: String, required: true },
+      nbJours: { type: Number, default: 1, min: 1 },
     },
   ],
   quotaAbsentsSimultanes: {

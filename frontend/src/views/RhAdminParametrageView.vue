@@ -15,6 +15,7 @@ async function charger() {
   joursFeries.value = response.data.joursFeries.map((j) => ({
     ...j,
     date: j.date ? j.date.slice(0, 10) : '',
+    nbJours: j.nbJours || 1,
   }))
   quotaAbsentsSimultanes.value = response.data.quotaAbsentsSimultanes
   loading.value = false
@@ -29,7 +30,7 @@ function supprimerType(index) {
 }
 
 function ajouterJourFerie() {
-  joursFeries.value.push({ date: '', label: '' })
+  joursFeries.value.push({ date: '', label: '', nbJours: 1 })
 }
 
 function supprimerJourFerie(index) {
@@ -72,6 +73,13 @@ onMounted(charger)
         <div v-for="(jour, index) in joursFeries" :key="index" class="ligne">
           <input v-model="jour.date" type="date" />
           <input v-model="jour.label" type="text" placeholder="Libellé" />
+          <input
+            v-model.number="jour.nbJours"
+            type="number"
+            min="1"
+            placeholder="Nombre de jours"
+            class="nb-jours-input"
+          />
           <button class="btn-secondary btn-small" @click="supprimerJourFerie(index)">Supprimer</button>
         </div>
         <button class="btn btn-secondary" @click="ajouterJourFerie">Ajouter un jour férié</button>
@@ -113,6 +121,11 @@ onMounted(charger)
   border-radius: var(--radius);
   background: var(--color-card);
   color: var(--color-text);
+}
+
+.nb-jours-input {
+  width: 130px;
+  flex: none;
 }
 
 .btn-small {

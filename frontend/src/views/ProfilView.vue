@@ -16,8 +16,7 @@ const autresUtilisateurs = ref([])
 
 const baseUrl = api.defaults.baseURL.replace('/api', '')
 
-const estRh = computed(() => store.user?.role === 'rh' || store.user?.role === 'admin')
-const estAdmin = computed(() => store.user?.role === 'admin')
+const estRhAdmin = computed(() => store.user?.role === 'rh-admin')
 const estSoi = computed(() => utilisateur.value && store.user?.id === utilisateur.value._id)
 
 async function chargerProfil() {
@@ -27,7 +26,7 @@ async function chargerProfil() {
   try {
     const response = await api.get('/users/' + route.params.id)
     utilisateur.value = response.data
-    if (store.user?.role === 'admin') {
+    if (store.user?.role === 'rh-admin') {
       const reponseUsers = await api.get('/users')
       autresUtilisateurs.value = reponseUsers.data.filter((u) => u._id !== utilisateur.value._id)
     }
@@ -50,7 +49,7 @@ async function enregistrer() {
       dateEmbauche: utilisateur.value.dateEmbauche,
       departement: utilisateur.value.departement,
     }
-    if (estAdmin.value) {
+    if (estRhAdmin.value) {
       payload.email = utilisateur.value.email
       payload.role = utilisateur.value.role
       payload.actif = utilisateur.value.actif
@@ -107,18 +106,18 @@ onMounted(chargerProfil)
         <div class="form-row">
           <div class="form-group">
             <label>Nom</label>
-            <input v-model="utilisateur.nom" type="text" :disabled="!estRh" />
+            <input v-model="utilisateur.nom" type="text" :disabled="!estRhAdmin" />
           </div>
           <div class="form-group">
             <label>Nom d'utilisateur</label>
-            <input v-model="utilisateur.username" type="text" :disabled="!estRh" />
+            <input v-model="utilisateur.username" type="text" :disabled="!estRhAdmin" />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label>Email</label>
-            <input v-model="utilisateur.email" type="email" :disabled="!estAdmin" />
+            <input v-model="utilisateur.email" type="email" :disabled="!estRhAdmin" />
           </div>
           <div class="form-group">
             <label>Téléphone</label>
@@ -129,32 +128,31 @@ onMounted(chargerProfil)
         <div class="form-row">
           <div class="form-group">
             <label>CIN</label>
-            <input v-model="utilisateur.cin" type="text" :disabled="!estRh" />
+            <input v-model="utilisateur.cin" type="text" :disabled="!estRhAdmin" />
           </div>
           <div class="form-group">
             <label>Date d'embauche</label>
-            <input v-model="utilisateur.dateEmbauche" type="date" :disabled="!estRh" />
+            <input v-model="utilisateur.dateEmbauche" type="date" :disabled="!estRhAdmin" />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label>Département</label>
-            <input v-model="utilisateur.departement" type="text" :disabled="!estRh" />
+            <input v-model="utilisateur.departement" type="text" :disabled="!estRhAdmin" />
           </div>
           <div class="form-group">
             <label>Rôle</label>
-            <select v-if="estAdmin" v-model="utilisateur.role">
+            <select v-if="estRhAdmin" v-model="utilisateur.role">
               <option value="employe">Employé</option>
               <option value="manager">Manager</option>
-              <option value="rh">RH</option>
-              <option value="admin">Admin</option>
+              <option value="rh-admin">RH-Admin</option>
             </select>
             <input v-else :value="utilisateur.role" type="text" disabled />
           </div>
         </div>
 
-        <div v-if="estAdmin" class="form-row">
+        <div v-if="estRhAdmin" class="form-row">
           <div class="form-group">
             <label>Manager</label>
             <select v-model="utilisateur.managerId">
@@ -168,7 +166,7 @@ onMounted(chargerProfil)
           </div>
         </div>
 
-        <div v-if="estAdmin" class="form-group form-group-inline">
+        <div v-if="estRhAdmin" class="form-group form-group-inline">
           <label>
             <input v-model="utilisateur.actif" type="checkbox" />
             Compte actif
@@ -202,7 +200,7 @@ onMounted(chargerProfil)
         </table>
         <p v-else class="empty-message">Aucun document.</p>
 
-        <div v-if="estRh || estSoi" class="upload-zone">
+        <div v-if="estRhAdmin || estSoi" class="upload-zone">
           <input type="file" @change="onFichierChange" />
           <button class="btn btn-secondary" :disabled="!fichier || uploadLoading" @click="envoyerDocument">
             {{ uploadLoading ? 'Envoi...' : 'Ajouter le document' }}
@@ -238,8 +236,16 @@ onMounted(chargerProfil)
 .form-group-inline label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-weight: 600;
+  cursor: pointer;
+}
+
+.form-group-inline input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: var(--color-primary);
   cursor: pointer;
 }
 

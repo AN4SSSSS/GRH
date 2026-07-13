@@ -43,18 +43,10 @@ function logout() {
           <RouterLink :to="'/profil/' + store.user.id">Mon profil</RouterLink>
         </template>
 
-        <template v-if="store.user?.role === 'rh'">
-          <RouterLink to="/rh/dashboard">Tableau de bord RH</RouterLink>
-          <RouterLink to="/rh/employes">Employés</RouterLink>
-          <RouterLink to="/rh/parametrage">Paramétrage</RouterLink>
-          <RouterLink to="/calendrier">Calendrier</RouterLink>
-          <RouterLink :to="'/profil/' + store.user.id">Mon profil</RouterLink>
-        </template>
-
-        <template v-if="store.user?.role === 'admin'">
-          <RouterLink to="/admin/dashboard">Tableau de bord</RouterLink>
-          <RouterLink to="/admin/utilisateurs">Comptes</RouterLink>
-          <RouterLink to="/rh/parametrage">Paramétrage</RouterLink>
+        <template v-if="store.user?.role === 'rh-admin'">
+          <RouterLink to="/rh-admin/dashboard">Tableau de bord</RouterLink>
+          <RouterLink to="/rh-admin/employes">Employés</RouterLink>
+          <RouterLink to="/rh-admin/parametrage">Paramétrage</RouterLink>
           <RouterLink to="/calendrier">Calendrier</RouterLink>
           <RouterLink :to="'/profil/' + store.user.id">Mon profil</RouterLink>
         </template>

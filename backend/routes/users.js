@@ -16,17 +16,12 @@ const storage = multer.diskStorage({
 const upload = multer({ storage })
 
 function peutAccederFiche(req, id) {
-  return ['rh', 'admin'].includes(req.userRole) || req.userId === id
+  return req.userRole === 'rh-admin' || req.userId === id
 }
 
-function rhBloqueSurAdmin(req, roleCible) {
-  return req.userRole === 'rh' && roleCible === 'admin'
-}
-
-router.get('/', verifyToken, requireRole('rh', 'admin'), async (req, res) => {
+router.get('/', verifyToken, requireRole('rh-admin'), async (req, res) => {
   try {
-    const filtre = req.userRole === 'rh' ? { role: { $ne: 'admin' } } : {}
-    const users = await User.find(filtre).select('-password').sort({ nom: 1 })
+    const users = await User.find().select('-password').sort({ nom: 1 })
     res.json(users)
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la récupération des employés' })
@@ -42,13 +37,9 @@ router.get('/equipe', verifyToken, requireRole('manager'), async (req, res) => {
   }
 })
 
-router.post('/', verifyToken, requireRole('rh', 'admin'), async (req, res) => {
+router.post('/', verifyToken, requireRole('rh-admin'), async (req, res) => {
   try {
     const { nom, username, email, password, role, telephone, cin, dateEmbauche, departement, managerId } = req.body
-
-    if (rhBloqueSurAdmin(req, role)) {
-      return res.status(403).json({ message: 'Le RH ne peut pas créer de compte admin' })
-    }
 
     const userExistant = await User.findOne({ $or: [{ username }, { email }] })
     if (userExistant) {
@@ -88,9 +79,6 @@ router.get('/:id', verifyToken, async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'Employé introuvable' })
     }
-    if (rhBloqueSurAdmin(req, user.role)) {
-      return res.status(403).json({ message: 'Accès refusé' })
-    }
     res.json(user)
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la récupération de la fiche' })
@@ -106,18 +94,13 @@ router.put('/:id', verifyToken, async (req, res) => {
     if (!cible) {
       return res.status(404).json({ message: 'Employé introuvable' })
     }
-    if (rhBloqueSurAdmin(req, cible.role)) {
-      return res.status(403).json({ message: 'Accès refusé' })
-    }
 
     let champsAutorises
-    if (req.userRole === 'admin') {
+    if (req.userRole === 'rh-admin') {
       champsAutorises = [
         'nom', 'username', 'email', 'password', 'role',
         'telephone', 'cin', 'dateEmbauche', 'departement', 'managerId', 'actif',
       ]
-    } else if (req.userRole === 'rh') {
-      champsAutorises = ['nom', 'username', 'telephone', 'cin', 'dateEmbauche', 'departement', 'managerId', 'role']
     } else {
       champsAutorises = ['telephone']
     }
@@ -127,10 +110,6 @@ router.put('/:id', verifyToken, async (req, res) => {
       if (req.body[champ] !== undefined) {
         updates[champ] = req.body[champ]
       }
-    }
-
-    if (req.userRole === 'rh' && updates.role === 'admin') {
-      return res.status(403).json({ message: 'Le RH ne peut pas attribuer le rôle admin' })
     }
 
     if (updates.username || updates.email) {
@@ -159,14 +138,11 @@ router.put('/:id', verifyToken, async (req, res) => {
   }
 })
 
-router.patch('/:id/desactiver', verifyToken, requireRole('rh', 'admin'), async (req, res) => {
+router.patch('/:id/desactiver', verifyToken, requireRole('rh-admin'), async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
     if (!user) {
       return res.status(404).json({ message: 'Employé introuvable' })
-    }
-    if (rhBloqueSurAdmin(req, user.role)) {
-      return res.status(403).json({ message: 'Accès refusé' })
     }
     user.actif = !user.actif
     await user.save()
@@ -176,7 +152,7 @@ router.patch('/:id/desactiver', verifyToken, requireRole('rh', 'admin'), async (
   }
 })
 
-router.delete('/:id', verifyToken, requireRole('admin'), async (req, res) => {
+router.delete('/:id', verifyToken, requireRole('rh-admin'), async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
     if (!user) {
@@ -198,9 +174,6 @@ router.post('/:id/documents', verifyToken, upload.single('fichier'), async (req,
     const user = await User.findById(req.params.id)
     if (!user) {
       return res.status(404).json({ message: 'Employé introuvable' })
-    }
-    if (rhBloqueSurAdmin(req, user.role)) {
-      return res.status(403).json({ message: 'Accès refusé' })
     }
     user.documents.push({
       nom: req.file.originalname,

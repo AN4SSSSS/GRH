@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { store } from '../store.js'
+import { store, clearSession } from '../store.js'
 import { nomRouteParDefaut } from '../roles.js'
 import MainLayout from '../layouts/MainLayout.vue'
 import LoginView from '../views/LoginView.vue'
@@ -10,11 +10,9 @@ import ProfilView from '../views/ProfilView.vue'
 import CalendrierView from '../views/CalendrierView.vue'
 import ValidationsView from '../views/ValidationsView.vue'
 import SoldesEquipeView from '../views/SoldesEquipeView.vue'
-import RhDashboardView from '../views/RhDashboardView.vue'
-import RhEmployesView from '../views/RhEmployesView.vue'
-import RhParametrageView from '../views/RhParametrageView.vue'
-import AdminDashboardView from '../views/AdminDashboardView.vue'
-import AdminUtilisateursView from '../views/AdminUtilisateursView.vue'
+import RhAdminDashboardView from '../views/RhAdminDashboardView.vue'
+import RhAdminEmployesView from '../views/RhAdminEmployesView.vue'
+import RhAdminParametrageView from '../views/RhAdminParametrageView.vue'
 
 const routes = [
   { path: '/login', name: 'login', component: LoginView },
@@ -45,13 +43,13 @@ const routes = [
         path: 'profil/:id',
         name: 'profil',
         component: ProfilView,
-        meta: { roles: ['employe', 'manager', 'rh', 'admin'] },
+        meta: { roles: ['employe', 'manager', 'rh-admin'] },
       },
       {
         path: 'calendrier',
         name: 'calendrier',
         component: CalendrierView,
-        meta: { roles: ['employe', 'manager', 'rh', 'admin'] },
+        meta: { roles: ['employe', 'manager', 'rh-admin'] },
       },
       {
         path: 'validations',
@@ -66,34 +64,22 @@ const routes = [
         meta: { roles: ['manager'] },
       },
       {
-        path: 'rh/dashboard',
-        name: 'rh-dashboard',
-        component: RhDashboardView,
-        meta: { roles: ['rh'] },
+        path: 'rh-admin/dashboard',
+        name: 'rh-admin-dashboard',
+        component: RhAdminDashboardView,
+        meta: { roles: ['rh-admin'] },
       },
       {
-        path: 'rh/employes',
-        name: 'rh-employes',
-        component: RhEmployesView,
-        meta: { roles: ['rh'] },
+        path: 'rh-admin/employes',
+        name: 'rh-admin-employes',
+        component: RhAdminEmployesView,
+        meta: { roles: ['rh-admin'] },
       },
       {
-        path: 'rh/parametrage',
-        name: 'rh-parametrage',
-        component: RhParametrageView,
-        meta: { roles: ['rh', 'admin'] },
-      },
-      {
-        path: 'admin/dashboard',
-        name: 'admin-dashboard',
-        component: AdminDashboardView,
-        meta: { roles: ['admin'] },
-      },
-      {
-        path: 'admin/utilisateurs',
-        name: 'admin-utilisateurs',
-        component: AdminUtilisateursView,
-        meta: { roles: ['admin'] },
+        path: 'rh-admin/parametrage',
+        name: 'rh-admin-parametrage',
+        component: RhAdminParametrageView,
+        meta: { roles: ['rh-admin'] },
       },
     ],
   },
@@ -104,9 +90,16 @@ const router = createRouter({
   routes,
 })
 
+const ROLES_CONNUES = ['employe', 'manager', 'rh-admin']
+
 router.beforeEach((to) => {
   if (to.name !== 'login' && !store.token) {
     return { name: 'login' }
+  }
+
+  if (store.token && !ROLES_CONNUES.includes(store.user?.role)) {
+    clearSession()
+    return to.name === 'login' ? true : { name: 'login' }
   }
 
   if (to.name === 'login' && store.token) {

@@ -7,9 +7,9 @@ const requireRole = require('../middleware/role')
 
 const router = express.Router()
 
-router.get('/stats', verifyToken, requireRole('admin'), async (req, res) => {
+router.get('/stats', verifyToken, requireRole('rh-admin'), async (req, res) => {
   try {
-    const roles = ['employe', 'manager', 'rh', 'admin']
+    const roles = ['employe', 'manager', 'rh-admin']
     const comptesParRole = {}
     for (const role of roles) {
       comptesParRole[role] = await User.countDocuments({ role })

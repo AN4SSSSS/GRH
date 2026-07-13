@@ -98,8 +98,8 @@ router.post('/', verifyToken, async (req, res) => {
         demandeId: demande._id,
       })
     } else {
-      const rh = await User.find({ role: 'rh' }).select('_id')
-      await notifierPlusieurs(io, rh.map((u) => u._id), {
+      const rhAdmin = await User.find({ role: 'rh-admin' }).select('_id')
+      await notifierPlusieurs(io, rhAdmin.map((u) => u._id), {
         type: 'demande_creee',
         message,
         demandeId: demande._id,
@@ -134,7 +134,7 @@ router.get('/equipe', verifyToken, requireRole('manager'), async (req, res) => {
   }
 })
 
-router.get('/all', verifyToken, requireRole('rh', 'admin'), async (req, res) => {
+router.get('/all', verifyToken, requireRole('rh-admin'), async (req, res) => {
   try {
     const demandes = await Demande.find().populate('userId', 'nom departement').sort({ createdAt: -1 })
     res.json(demandes)
@@ -147,7 +147,7 @@ router.get('/calendrier', verifyToken, async (req, res) => {
   try {
     let idsConcernes = []
 
-    if (req.userRole === 'rh' || req.userRole === 'admin') {
+    if (req.userRole === 'rh-admin') {
       const tousLesUsers = await User.find().select('_id')
       idsConcernes = tousLesUsers.map((u) => u._id)
     } else if (req.userRole === 'manager') {

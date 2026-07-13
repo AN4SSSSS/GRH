@@ -31,7 +31,7 @@ router.get('/', verifyToken, async (req, res) => {
   }
 })
 
-router.put('/', verifyToken, requireRole('rh', 'admin'), async (req, res) => {
+router.put('/', verifyToken, requireRole('rh-admin'), async (req, res) => {
   try {
     const { typesConges, joursFeries, quotaAbsentsSimultanes } = req.body
     const parametrage = await getOuCreerParametrage()
