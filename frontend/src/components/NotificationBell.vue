@@ -7,11 +7,18 @@ import { getNotifications, marquerLue, marquerToutLu, supprimerNotification } fr
 const router = useRouter()
 const ouvert = ref(false)
 const racine = ref(null)
+const dropdownEl = ref(null)
+const dropdownStyle = ref({})
 
 const nonLues = computed(() => store.notifications.filter((n) => !n.lu).length)
 
 function fermerSiExterieur(event) {
-  if (racine.value && !racine.value.contains(event.target)) {
+  if (
+    racine.value &&
+    !racine.value.contains(event.target) &&
+    dropdownEl.value &&
+    !dropdownEl.value.contains(event.target)
+  ) {
     ouvert.value = false
   }
 }
@@ -31,6 +38,13 @@ onUnmounted(() => {
 })
 
 function toggle() {
+  if (!ouvert.value && racine.value) {
+    const rect = racine.value.getBoundingClientRect()
+    dropdownStyle.value = {
+      top: rect.bottom + 4 + 'px',
+      left: rect.left + 'px',
+    }
+  }
   ouvert.value = !ouvert.value
 }
 
@@ -86,24 +100,26 @@ async function supprimer(notification) {
       <span v-if="nonLues" class="badge">{{ nonLues }}</span>
     </button>
 
-    <div v-if="ouvert" class="dropdown">
-      <div class="dropdown-header">
-        <span>Notifications</span>
-        <button v-if="nonLues" class="mark-all" @click="toutMarquerLu">Tout marquer lu</button>
+    <Teleport to="body">
+      <div v-if="ouvert" ref="dropdownEl" class="dropdown" :style="dropdownStyle">
+        <div class="dropdown-header">
+          <span>Notifications</span>
+          <button v-if="nonLues" class="mark-all" @click="toutMarquerLu">Tout marquer lu</button>
+        </div>
+        <p v-if="!store.notifications.length" class="empty">Aucune notification</p>
+        <div
+          v-for="notification in store.notifications"
+          :key="notification._id"
+          class="notification-item"
+          :class="{ unread: !notification.lu }"
+          @click="ouvrirNotification(notification)"
+        >
+          <button class="delete-btn" title="Supprimer" @click.stop="supprimer(notification)">✕</button>
+          <p>{{ notification.message }}</p>
+          <span class="date">{{ new Date(notification.createdAt).toLocaleString() }}</span>
+        </div>
       </div>
-      <p v-if="!store.notifications.length" class="empty">Aucune notification</p>
-      <div
-        v-for="notification in store.notifications"
-        :key="notification._id"
-        class="notification-item"
-        :class="{ unread: !notification.lu }"
-        @click="ouvrirNotification(notification)"
-      >
-        <button class="delete-btn" title="Supprimer" @click.stop="supprimer(notification)">✕</button>
-        <p>{{ notification.message }}</p>
-        <span class="date">{{ new Date(notification.createdAt).toLocaleString() }}</span>
-      </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
@@ -143,10 +159,7 @@ async function supprimer(notification) {
 }
 
 .dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 4px;
+  position: fixed;
   width: 280px;
   max-height: 320px;
   overflow-y: auto;
@@ -154,7 +167,7 @@ async function supprimer(notification) {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 20;
+  z-index: 200;
 }
 
 .dropdown-header {

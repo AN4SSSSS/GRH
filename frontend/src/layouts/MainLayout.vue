@@ -4,6 +4,7 @@ import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { store, clearSession } from '../store.js'
 import { theme, toggleTheme } from '../theme.js'
 import { connecterSocket, deconnecterSocket } from '../socket.js'
+import { formaterRole } from '../roles.js'
 import NotificationBell from '../components/NotificationBell.vue'
 
 const router = useRouter()
@@ -24,7 +25,10 @@ function logout() {
     <aside class="sidebar">
       <div class="sidebar-header">
         <h2>GRH</h2>
-        <p v-if="store.user">{{ store.user.nom }}</p>
+        <p v-if="store.user" class="user-info">
+          {{ store.user.nom }}
+          <span class="role-badge">{{ formaterRole(store.user.role) }}</span>
+        </p>
         <NotificationBell />
       </div>
       <nav class="sidebar-nav">
@@ -91,6 +95,23 @@ function logout() {
   color: var(--color-text-light);
   font-size: 14px;
   margin: 0 0 12px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.role-badge {
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: none;
 }
 
 .sidebar-header .notification-bell {

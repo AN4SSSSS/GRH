@@ -4,4 +4,14 @@ function nomRouteParDefaut(role) {
   return 'dashboard'
 }
 
-export { nomRouteParDefaut }
+const LIBELLES_ROLES = {
+  employe: 'Employé',
+  manager: 'Manager',
+  'rh-admin': 'RH-Admin',
+}
+
+function formaterRole(role) {
+  return LIBELLES_ROLES[role] || role
+}
+
+export { nomRouteParDefaut, formaterRole }

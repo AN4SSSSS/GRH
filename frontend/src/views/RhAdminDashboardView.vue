@@ -2,32 +2,70 @@
 import { onMounted, ref, computed } from 'vue'
 import api from '../api.js'
 import { formaterStatut } from '../statuts.js'
+import { formaterRole } from '../roles.js'
 
 const stats = ref(null)
 const utilisateurs = ref([])
 const demandes = ref([])
+const joursFeries = ref([])
 const loading = ref(true)
-
-function formatDuree(secondes) {
-  const heures = Math.floor(secondes / 3600)
-  const minutes = Math.floor((secondes % 3600) / 60)
-  return `${heures}h ${minutes}min`
-}
 
 async function charger() {
   loading.value = true
-  const [reponseStats, reponseUsers, reponseDemandes] = await Promise.all([
+  const [reponseStats, reponseUsers, reponseDemandes, reponseParametrage] = await Promise.all([
     api.get('/admin/stats'),
     api.get('/users'),
     api.get('/demandes/all'),
+    api.get('/parametrage'),
   ])
   stats.value = reponseStats.data
   utilisateurs.value = reponseUsers.data
   demandes.value = reponseDemandes.data
+  joursFeries.value = reponseParametrage.data.joursFeries
   loading.value = false
 }
 
 const employesActifs = computed(() => utilisateurs.value.filter((u) => u.actif).length)
+
+const absentsAujourdhui = computed(() => {
+  const aujourdhui = new Date().toDateString()
+  return demandes.value.filter((d) => {
+    if (d.statut !== 'approuvee') return false
+    const debut = new Date(new Date(d.dateDebut).toDateString())
+    const fin = new Date(new Date(d.dateFin).toDateString())
+    const jour = new Date(aujourdhui)
+    return jour >= debut && jour <= fin
+  }).length
+})
+
+const prochainJourFerie = computed(() => {
+  const aujourdhui = new Date(new Date().toDateString())
+  const prochains = joursFeries.value
+    .map((j) => ({ ...j, dateObj: new Date(j.date) }))
+    .filter((j) => j.dateObj >= aujourdhui)
+    .sort((a, b) => a.dateObj - b.dateObj)
+  return prochains[0] || null
+})
+
+const comptesParRoleListe = computed(() => {
+  if (!stats.value) return []
+  const max = Math.max(...Object.values(stats.value.comptesParRole), 1)
+  return Object.entries(stats.value.comptesParRole).map(([role, nombre]) => ({
+    role,
+    nombre,
+    pourcentage: Math.round((nombre / max) * 100),
+  }))
+})
+
+const demandesParStatutListe = computed(() => {
+  if (!stats.value) return []
+  const max = Math.max(...Object.values(stats.value.demandesParStatut), 1)
+  return Object.entries(stats.value.demandesParStatut).map(([statut, nombre]) => ({
+    statut,
+    nombre,
+    pourcentage: Math.round((nombre / max) * 100),
+  }))
+})
 
 const repartitionParType = computed(() => {
   const types = ['paye', 'maladie', 'sans_solde']
@@ -89,53 +127,51 @@ onMounted(charger)
           <p class="valeur">{{ stats.demandesParStatut?.en_attente ?? 0 }}</p>
         </div>
         <div class="card indicateur">
-          <p class="label">Base de données</p>
-          <p class="valeur valeur-texte">{{ stats.mongoStatut }}</p>
-          <p class="detail">{{ stats.nomBaseDeDonnees }}</p>
+          <p class="label">Absents aujourd'hui</p>
+          <p class="valeur">{{ absentsAujourdhui }}</p>
         </div>
         <div class="card indicateur">
-          <p class="label">Serveur actif depuis</p>
-          <p class="valeur valeur-texte">{{ formatDuree(stats.uptimeSecondes) }}</p>
-          <p class="detail">Node {{ stats.versionNode }}</p>
+          <p class="label">Prochain jour férié</p>
+          <template v-if="prochainJourFerie">
+            <p class="valeur valeur-texte">{{ prochainJourFerie.label }}</p>
+            <p class="detail">{{ prochainJourFerie.dateObj.toLocaleDateString('fr-FR') }}</p>
+          </template>
+          <p v-else class="valeur valeur-texte">Aucun</p>
         </div>
       </div>
 
       <div class="card">
         <h2>Comptes par rôle</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Rôle</th>
-              <th>Nombre</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(nombre, role) in stats.comptesParRole" :key="role">
-              <td>{{ role }}</td>
-              <td>{{ nombre }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="bar-chart">
+          <div v-for="ligne in comptesParRoleListe" :key="ligne.role" class="bar-row">
+            <span class="bar-label">{{ formaterRole(ligne.role) }}</span>
+            <div class="bar-track">
+              <div
+                class="bar-fill"
+                :class="'bar-fill-' + ligne.role"
+                :style="{ width: ligne.pourcentage + '%' }"
+              ></div>
+            </div>
+            <span class="bar-value">{{ ligne.nombre }}</span>
+          </div>
+        </div>
       </div>
 
       <div class="card">
         <h2>Demandes par statut</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Statut</th>
-              <th>Nombre</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(nombre, statut) in stats.demandesParStatut" :key="statut">
-              <td>
-                <span class="badge" :class="'badge-' + statut">{{ formaterStatut(statut) }}</span>
-              </td>
-              <td>{{ nombre }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="bar-chart">
+          <div v-for="ligne in demandesParStatutListe" :key="ligne.statut" class="bar-row">
+            <span class="bar-label">{{ formaterStatut(ligne.statut) }}</span>
+            <div class="bar-track">
+              <div
+                class="bar-fill"
+                :class="'bar-fill-' + ligne.statut"
+                :style="{ width: ligne.pourcentage + '%' }"
+              ></div>
+            </div>
+            <span class="bar-value">{{ ligne.nombre }}</span>
+          </div>
+        </div>
       </div>
 
       <div class="card">
@@ -258,5 +294,46 @@ h2 {
   background: var(--color-primary);
   height: 100%;
   border-radius: 999px;
+}
+
+.bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bar-label {
+  width: 130px;
+  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.bar-track {
+  flex: 1;
+  background: var(--color-bg);
+  border-radius: 999px;
+  height: 14px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s;
+}
+
+.bar-value {
+  width: 28px;
+  flex-shrink: 0;
+  text-align: right;
+  font-weight: 600;
+  font-size: 14px;
 }
 </style>

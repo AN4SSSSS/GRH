@@ -199,6 +199,63 @@ th {
   color: #d1d5db;
 }
 
+/* Bar chart fills */
+.bar-fill-employe {
+  background: #2a78d6;
+}
+
+.bar-fill-manager {
+  background: #1baf7a;
+}
+
+.bar-fill-rh-admin {
+  background: #eda100;
+}
+
+:root[data-theme='dark'] .bar-fill-employe {
+  background: #3987e5;
+}
+
+:root[data-theme='dark'] .bar-fill-manager {
+  background: #199e70;
+}
+
+:root[data-theme='dark'] .bar-fill-rh-admin {
+  background: #c98500;
+}
+
+.bar-fill-en_attente {
+  background: #92400e;
+}
+
+.bar-fill-approuvee {
+  background: #065f46;
+}
+
+.bar-fill-refusee {
+  background: #991b1b;
+}
+
+.bar-fill-annulee {
+  background: #374151;
+}
+
+:root[data-theme='dark'] .bar-fill-en_attente {
+  background: #fde68a;
+}
+
+:root[data-theme='dark'] .bar-fill-approuvee {
+  background: #6ee7b7;
+}
+
+:root[data-theme='dark'] .bar-fill-refusee {
+  background: #fca5a5;
+}
+
+:root[data-theme='dark'] .bar-fill-annulee {
+  background: #d1d5db;
+}
+
 .error-message {
   color: var(--color-danger);
   font-size: 14px;
