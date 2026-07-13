@@ -1,5 +1,6 @@
 const express = require('express')
 const path = require('path')
+const fs = require('fs/promises')
 const multer = require('multer')
 const bcrypt = require('bcryptjs')
 const User = require('../models/User')
@@ -183,6 +184,33 @@ router.post('/:id/documents', verifyToken, upload.single('fichier'), async (req,
     res.status(201).json(user.documents)
   } catch (error) {
     res.status(500).json({ message: "Erreur lors de l'upload du document" })
+  }
+})
+
+router.delete('/:id/documents/:docId', verifyToken, async (req, res) => {
+  if (!peutAccederFiche(req, req.params.id)) {
+    return res.status(403).json({ message: 'Accès refusé' })
+  }
+  try {
+    const user = await User.findById(req.params.id)
+    if (!user) {
+      return res.status(404).json({ message: 'Employé introuvable' })
+    }
+    const document = user.documents.id(req.params.docId)
+    if (!document) {
+      return res.status(404).json({ message: 'Document introuvable' })
+    }
+    const cheminFichier = path.join(__dirname, '..', document.url.replace('/uploads/', 'uploads/'))
+    document.deleteOne()
+    await user.save()
+    try {
+      await fs.unlink(cheminFichier)
+    } catch (error) {
+      // le fichier physique peut déjà être absent, ce n'est pas bloquant
+    }
+    res.json(user.documents)
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la suppression du document' })
   }
 })
 

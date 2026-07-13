@@ -88,6 +88,17 @@ async function envoyerDocument() {
   }
 }
 
+async function supprimerDocument(doc) {
+  if (!confirm('Supprimer le document "' + doc.nom + '" ?')) return
+  errorMessage.value = ''
+  try {
+    const response = await api.delete('/users/' + utilisateur.value._id + '/documents/' + doc._id)
+    utilisateur.value.documents = response.data
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || 'Erreur lors de la suppression du document'
+  }
+}
+
 watch(() => route.params.id, chargerProfil)
 onMounted(chargerProfil)
 </script>
@@ -96,7 +107,7 @@ onMounted(chargerProfil)
   <div>
     <h1 class="page-title">Fiche employé</h1>
 
-    <p v-if="loading">Chargement...</p>
+    <template v-if="loading"></template>
     <p v-else-if="errorMessage" class="error-message">{{ errorMessage }}</p>
 
     <template v-else-if="utilisateur">
@@ -192,8 +203,9 @@ onMounted(chargerProfil)
             <tr v-for="doc in utilisateur.documents" :key="doc._id">
               <td>{{ doc.nom }}</td>
               <td>{{ new Date(doc.dateUpload).toLocaleDateString() }}</td>
-              <td>
+              <td class="actions">
                 <a class="btn-secondary btn-small" :href="baseUrl + doc.url" target="_blank" download>Télécharger</a>
+                <button class="btn-secondary btn-small btn-danger" @click="supprimerDocument(doc)">Supprimer</button>
               </td>
             </tr>
           </tbody>
@@ -269,6 +281,18 @@ onMounted(chargerProfil)
   text-decoration: none;
   font-size: 13px;
   font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-danger {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
 }
 
 .success-message {

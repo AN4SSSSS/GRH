@@ -54,9 +54,8 @@ onMounted(charger)
   <div>
     <h1 class="page-title">Paramétrage</h1>
 
-    <p v-if="loading">Chargement...</p>
 
-    <template v-else>
+    <template v-if="!loading">
       <div class="card section">
         <h2>Types de congés</h2>
         <div v-for="(type, index) in typesConges" :key="index" class="ligne">

@@ -59,7 +59,7 @@ onMounted(charger)
     <h1 class="page-title">Validations</h1>
 
     <div class="card">
-      <p v-if="loading">Chargement...</p>
+      <template v-if="loading"></template>
       <table v-else-if="demandesEnAttente.length">
         <thead>
           <tr>

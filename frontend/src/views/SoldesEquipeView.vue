@@ -43,7 +43,7 @@ onMounted(charger)
     <h1 class="page-title">Soldes de l'équipe</h1>
 
     <div class="card">
-      <p v-if="loading">Chargement...</p>
+      <template v-if="loading"></template>
       <table v-else-if="soldesParMembre.length">
         <thead>
           <tr>

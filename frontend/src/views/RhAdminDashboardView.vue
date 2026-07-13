@@ -106,9 +106,7 @@ onMounted(charger)
   <div>
     <h1 class="page-title">Tableau de bord RH-Admin</h1>
 
-    <p v-if="loading">Chargement...</p>
-
-    <template v-else-if="stats">
+    <template v-if="stats">
       <div class="cards-grid">
         <div class="card indicateur">
           <p class="label">Comptes au total</p>

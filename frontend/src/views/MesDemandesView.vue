@@ -68,7 +68,7 @@ onMounted(chargerDemandes)
         </div>
       </div>
 
-      <p v-if="loading">Chargement...</p>
+      <template v-if="loading"></template>
       <table v-else-if="demandesFiltrees.length">
         <thead>
           <tr>

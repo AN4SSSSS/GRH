@@ -6,7 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GRH - Gestion des congés</title>
     <script>
-      document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light')
+      var theme = localStorage.getItem('theme') || 'light'
+      document.documentElement.setAttribute('data-theme', theme)
+      document.documentElement.style.colorScheme = theme
+      document.documentElement.style.background = theme === 'dark' ? '#14161a' : '#f6f7f9'
+      document.documentElement.style.color = theme === 'dark' ? '#e5e7eb' : '#2b2d33'
     </script>
   </head>
   <body>

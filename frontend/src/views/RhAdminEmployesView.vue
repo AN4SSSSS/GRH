@@ -152,8 +152,8 @@ onMounted(charger)
         <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
       </form>
 
-      <p v-if="loading">Chargement...</p>
 
+      <template v-if="loading"></template>
       <template v-else-if="utilisateurs.length">
         <div v-for="groupe in equipes" :key="groupe.manager._id" class="groupe">
           <div class="groupe-header">
